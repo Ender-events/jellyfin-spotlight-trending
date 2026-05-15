@@ -9,7 +9,7 @@ description: >
   Expose a selection of popular TMDB movies and
   series via avatars/list.txt
 category: "General"
-owner: "Ender"
+owner: "Ender-events"
 artifacts:
   - "Jellyfin.Plugin.TmdbTrending.dll"
 changelog: >
