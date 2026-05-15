@@ -1,7 +1,7 @@
 ---
-name: "Template"
+name: "TmdbTrending"
 guid: "bf786068-50d2-4bf6-a474-3665ec78f0c9"
-version: "0.1.0.0"
+version: "0.1.2.0"
 targetAbi: "10.11.0.0"
 framework: "net9.0"
 overview: "Jellyfin TMDB Trending"
