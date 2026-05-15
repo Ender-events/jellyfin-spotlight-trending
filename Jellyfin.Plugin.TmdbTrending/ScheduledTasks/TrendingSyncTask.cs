@@ -1,6 +1,8 @@
 using Jellyfin.Plugin.TmdbTrending.Services;
 using MediaBrowser.Model.Tasks;
 using Microsoft.Extensions.Logging;
+using System.Reflection;
+using System.Runtime.Loader;
 
 namespace Jellyfin.Plugin.TmdbTrending.ScheduledTasks;
 
@@ -22,17 +24,61 @@ public class TrendingSyncTask : IScheduledTask
         _logger = logger;
     }
 
+    private static string GetTmdbApiKey()
+    {
+        try
+        {
+            Assembly? tmdbAssembly =
+                AssemblyLoadContext.All
+                    .SelectMany(x => x.Assemblies)
+                    .FirstOrDefault(x => x.FullName?.Contains("MediaBrowser.Providers") ?? false);
+
+            var pluginClassType = tmdbAssembly?.GetType("MediaBrowser.Providers.Plugins.Tmdb.Plugin");
+            var instanceProp = pluginClassType?.GetProperty("Instance", BindingFlags.Public | BindingFlags.Static);
+            var pluginInstance = instanceProp?.GetValue(null);
+
+            var configProp = pluginInstance?.GetType().GetProperty("Configuration");
+            var config = configProp?.GetValue(pluginInstance);
+
+            var tmdbApiKeyProp = config?.GetType().GetProperty("TmdbApiKey");
+            var customApiKey = tmdbApiKeyProp?.GetValue(config) as string;
+
+            string apiKey;
+            if (!string.IsNullOrEmpty(customApiKey))
+            {
+                apiKey = customApiKey;
+            }
+            else
+            {
+                var tmdbUtils = tmdbAssembly?.GetType("MediaBrowser.Providers.Plugins.Tmdb.TmdbUtils");
+                var apiKeyField = tmdbUtils?.GetField("ApiKey", BindingFlags.Public | BindingFlags.Static);
+                apiKey = (string?)apiKeyField?.GetValue(null) ?? string.Empty;
+            }
+            return apiKey;
+        }
+        catch
+        {
+            throw new InvalidOperationException("API key TMDB cannot be retrieved via reflection.");
+        }
+    }
+
     public async Task ExecuteAsync(IProgress<double> progress, CancellationToken cancellationToken)
     {
         var config = Plugin.Instance!.Configuration;
 
-        if (string.IsNullOrWhiteSpace(config.TmdbApiKey))
+        var apiKey = config.TmdbApiKey;
+        if (string.IsNullOrWhiteSpace(apiKey))
+        {
+            apiKey = GetTmdbApiKey();
+        }
+
+        if (string.IsNullOrWhiteSpace(apiKey))
             throw new InvalidOperationException("API key TMDB not configured.");
 
         try
         {
-            var movieTmdbIds = await _tmdbService.FetchTrendingMovieIdsAsync(config.TmdbApiKey);
-            var tvTmdbIds = await _tmdbService.FetchTrendingTvIdsAsync(config.TmdbApiKey);
+            var movieTmdbIds = await _tmdbService.FetchTrendingMovieIdsAsync(apiKey);
+            var tvTmdbIds = await _tmdbService.FetchTrendingTvIdsAsync(apiKey);
             var allTmdbIds = movieTmdbIds.Concat(tvTmdbIds).ToList();
             progress.Report(25);
 
