@@ -79,7 +79,7 @@ public class TrendingSyncTask : IScheduledTask
         {
             var movieTmdbIds = await _tmdbService.FetchTrendingMovieIdsAsync(apiKey);
             var tvTmdbIds = await _tmdbService.FetchTrendingTvIdsAsync(apiKey);
-            var allTmdbIds = movieTmdbIds.Concat(tvTmdbIds).ToList();
+            var allTmdbIds = Interleave(movieTmdbIds, tvTmdbIds).ToList();
             progress.Report(25);
 
             _logger.LogInformation("TMDB Trending: {MovieCount} movies and {TvCount} shows retrieved", movieTmdbIds.Count, tvTmdbIds.Count);
@@ -112,13 +112,35 @@ public class TrendingSyncTask : IScheduledTask
         }
     }
 
+    private static IEnumerable<string> Interleave(IEnumerable<string> movies, IEnumerable<string> shows)
+    {
+        using var movieEnum = movies.GetEnumerator();
+        using var showEnum = shows.GetEnumerator();
+
+        bool hasMovie, hasShow;
+        while ((hasMovie = movieEnum.MoveNext()) | (hasShow = showEnum.MoveNext()))
+        {
+            if (hasMovie)
+            {
+                yield return movieEnum.Current;
+            }
+            if (hasShow)
+            {
+                yield return showEnum.Current;
+            }
+        }
+    }
+
     private static List<string> MergeIds(List<string> fresh, List<string> existing)
     {
         const int Max = 15;
+        if (fresh.Count >= Max)
+        {
+            return fresh.Take(Max).ToList();
+        }
 
         return fresh
             .Union(existing, StringComparer.OrdinalIgnoreCase)
-            .Distinct(StringComparer.OrdinalIgnoreCase)
             .Take(Max)
             .ToList();
     }
