@@ -1,0 +1,16 @@
+---
+name: "Template"
+guid: "bf786068-50d2-4bf6-a474-3665ec78f0c9"
+version: "0.1.0.0"
+targetAbi: "10.11.0.0"
+framework: "net9.0"
+overview: "Jellyfin TMDB Trending"
+description: >
+  Expose a selection of popular TMDB movies and
+  series via avatars/list.txt
+category: "General"
+owner: "Ender"
+artifacts:
+  - "Jellyfin.Plugin.TmdbTrending.dll"
+changelog: >
+  changelog
