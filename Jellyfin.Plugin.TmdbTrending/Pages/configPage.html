@@ -1,0 +1,43 @@
+<div data-role="page" class="page pluginConfigurationPage" data-require="emby-input,emby-button,emby-checkbox">
+    <div data-role="content">
+        <div class="content-primary">
+            <h2>TMDB Trending — Configuration</h2>
+            <form class="configForm">
+                <div class="inputContainer">
+                    <label class="inputLabel" for="tmdbApiKey">API key TMDB</label>
+                    <input type="text" id="tmdbApiKey" is="emby-input" placeholder="api key" />
+                    <div class="fieldDescription">
+                        Get your API key on
+                        <a href="https://www.themoviedb.org/settings/api" target="_blank">themoviedb.org</a>
+                    </div>
+                </div>
+                <div>
+                    <button type="submit" is="emby-button" class="raised button-submit block">
+                        <span>Save</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        var pluginId = "bf786068-50d2-4bf6-a474-3665ec78f0c9";
+
+        document.querySelector(".pluginConfigurationPage")
+            .addEventListener("pageshow", function () {
+                ApiClient.getPluginConfiguration(pluginId).then(function (config) {
+                    document.querySelector("#tmdbApiKey").value = config.TmdbApiKey || "";
+                });
+            });
+
+        document.querySelector(".configForm")
+            .addEventListener("submit", function (e) {
+                e.preventDefault();
+                ApiClient.getPluginConfiguration(pluginId).then(function (config) {
+                    config.TmdbApiKey = document.querySelector("#tmdbApiKey").value;
+                    ApiClient.updatePluginConfiguration(pluginId, config)
+                        .then(Dashboard.processPluginConfigurationUpdateResult);
+                });
+            });
+    </script>
+</div>
